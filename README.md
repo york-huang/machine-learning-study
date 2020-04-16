@@ -1,12 +1,12 @@
 # Machine Learning Study
 
-Notes, codes, useful files and various stuff about machine learning.
+Notes, code, useful assets and various stuff about machine learning.
 
 Tools:
 
 * [Typora](https://typora.io/) for markdown editing.
 
-* [Deepo](https://hub.docker.com/r/ufoym/deepo) (more helpful to check the Docker Hub paper instead of its home page) for Jupyter and other Python ML environment. All the uploaded Jupyter notebooks are made and tested with [this](https://hub.docker.com/layers/ufoym/deepo/all-jupyter-py36-cpu/images/sha256-372e2014ed6a6dc6c96f74880339e3cf75116aa876a55e3a29c971d6c951adee?context=explore) Deepo setup.
+* [Deepo](https://hub.docker.com/r/ufoym/deepo) (more helpful to check the Docker Hub page instead of its home page) for Jupyter and other Python ML environment. All the uploaded Jupyter notebooks are made and tested with [this](https://hub.docker.com/layers/ufoym/deepo/all-jupyter-py36-cpu/images/sha256-372e2014ed6a6dc6c96f74880339e3cf75116aa876a55e3a29c971d6c951adee?context=explore) Deepo setup.
 
 * [Working with Docker Desktop (Windows 10) and WSL](https://nickjanetakis.com/blog/setting-up-docker-for-windows-and-wsl-to-work-flawlessly#ensure-volume-mounts-work).
 
