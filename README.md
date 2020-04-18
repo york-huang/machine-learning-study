@@ -14,6 +14,8 @@ Tools:
 
 Learning material:
 
-* David Silver/UCL reinforcement learning lectures ([slides](https://www.davidsilver.uk/teaching/), [video](https://www.bilibili.com/video/BV1kb411i7KG?from=search&seid=10277587044180293066)).
+* David Silver/UCL reinforcement learning lectures ([slides](https://www.davidsilver.uk/teaching/), [video](https://www.bilibili.com/video/BV1kb411i7KG?from=search&seid=10277587044180293066)), excellent resource for learning RL.
 
-* Liu Jianping's machine learning [blog](https://www.cnblogs.com/pinard/).
+* Liu Jianping's machine learning [blog](https://www.cnblogs.com/pinard/), detailed notes for various topics on machine learning.
+
+* [AlphaZero Gomoku](https://github.com/junxiaosong/AlphaZero_Gomoku), very good resource for understanding the principle of AlphaZero.
