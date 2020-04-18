@@ -14,21 +14,21 @@
 
 ## 技术要点
 
-* 棋盘局面数据结构：$4*width*height$ tensor
+* 棋盘局面数据结构：$4*width*height$ tensor。
 
-* MCTS树结构
+* MCTS树结构。
 
-* MCTS中特殊的基于先验概率、访问次数以及Q值的greedy法选择子结点
+* MCTS从上向下搜索中选择子结点的特殊贪心算法：基于先验概率、访问次数以及Q值。
 
-* MCTS中递归的值符号交替反转的叶结点价值回溯传播
+* MCTS递归回溯更新结点信息时的交替反转叶结点价值以实现Minimax式的对弈双方的价值统计。
 
-* 分别输出局面价值与策略的策略价值网络
+* 基于深度神经网络的策略价值网络的两层结构：公共卷积网络+动作网络/局面评价网络。
 
-* 策略价值网络的特殊损失函数
+* 策略价值网络的损失函数设计。
 
-* rollout与self-play生成训练数据
+* 基于策略价值网络的MCTS自对弈生成训练数据的机制。
 
-* 真实对局中的下子决策机制：rollout多次根据结点访问次数来选择最优的下一子着法
+* 真实对局中的下子决策机制：模拟对局多次，根据结点访问次数来选择最优的下一子着法。
 
 ## 主要源码文件简析
 
@@ -38,15 +38,15 @@
 
 * `train.py`：定义训练管线TrainPipeline类，包含自对弈及训练数据收集（`TrainPipeline.collect_selfplay_data`）、数据扩充（`TrainPipeline.get_equi_data`）、策略更新（`TrainPipeline.policy_update`）和策略评估（`TrainPipeline.policy_evaluate`）等核心训练功能。
 
-* `mcts_alphaZero.py`：定义MCTS树结点结构TreeNode类、封装各核心MCTS操作（playout、价值回溯更新、计算各下子概率）的MCTS类、封装对弈接口的MCTSPlayer类。
+* `mcts_alphaZero.py`：定义MCTS树结点结构TreeNode类、封装各核心MCTS操作（模拟对局playout、价值回溯更新、计算各下子概率）的MCTS类、封装对弈接口的MCTSPlayer类。
 
-* `mcts_pure.py`：实现纯MCTS的下子算法，主要用于策略价值网络训练过程的策略评估（即比较使用AlphaZero的MCTS与简单的MCTS的棋力以评判当前策略价值网络的训练效果）。
+* `mcts_pure.py`：实现纯MCTS的下子算法，主要用于策略价值网络训练过程的策略评估（即比较基于AlphaZero的MCTS与纯MCTS的棋力以评判当前策略价值网络的训练效果）。
 
 * `policy_value_net_*.py`：策略价值网络的结构定义以及迭代训练接口，不同文件对应不同的机器学习后端，包括Keras、Tensoflow、PyTorch与Theano。
 
 ## 棋盘局面数据结构
 
-* width列height行的棋盘，定义左下角位置坐标为(0,0)，右上角坐标为(width-1,height-1)。称下子为move，move为一整数，则下子位置(n,m)对应的move值是：$move=n*width+m$。
+* width列height行的棋盘，定义左下角位置坐标为(0,0)，右上角坐标为(width-1,height-1)。下子位置以单一整数move编码，即下子位置(n,m)对应move值：$move=n*width+m$。
 
 * 两棋手以序号0和1标识，棋手0或1都可以先手，在`Game.start_play`方法的start\_player指定，在人机对弈模式下，默认AI先手。出现和棋时则以-1为胜者序号。
 
@@ -70,13 +70,13 @@
 
 * \_children：move=>node字典，维护move到各子结点的映射。
 
-* \_n\_visits：本结点在历次playout中的累计被访问次数。
+* \_n\_visits：本结点在历次模拟对局中的累计被访问次数。
 
 * \_Q：结点的Q价值。
 
-* \_u：计算结点价值（不同于Q价值，而是用于在greedy法中选择结点时所用的价值）时的中间变量。
+* \_u：计算结点价值（不同于Q价值，而是在进行搜索时选择结点所用的价值）时的中间变量。
 
-* \_P：选择本结点的先验概率（即从父节点选择执行本结点对应的move而到达本结点的先验概率）。
+* \_P：本结点的先验概率（意即父结点搜索时选择本结点的先验概率）。
 
 结点价值的计算，`TreeNode.get_value`：
 
@@ -85,11 +85,11 @@ self._u = (c_puct * self._P * np.sqrt(self._parent._n_visits) / (1 + self._n_vis
 return self._Q + self._u
 ```
 
-其中c\_puct为传入参数，代码中可见默认值为5，根据上式，在结点访问次数\_n\_visits尚少的情况下（即迭代更新次数少），参数c\_puct、先验概率\_P与父结点访问次数\_parent.\_n\_visits会显著影响结点价值的计算，而随着self.\_n\_visits的增长，结点价值会趋近于本身的Q价值。
+其中c\_puct为传入参数（默认值5），根据上式，在结点访问次数\_n\_visits尚少的情况下（即模拟对局次数少），参数c\_puct、先验概率\_P与父结点访问次数\_parent.\_n\_visits会显著影响结点价值的计算，而随着self.\_n\_visits的增长，结点价值会趋近于本身的Q价值。
 
-在从上向下进行树搜索过程中的子结点选择（选择子结点实际上是选择子结点对应的move）算法，`TreeNode.select`，则是简单的选取`TreeNode.get_value`返回值最大的子结点，结合上述价值计算的分析，可以认为这是特殊的贪心算法：在结点迭代更新次数少的时候，各结点的先验概率对树搜索起很大的作用，而随着迭代增加，树搜索算法回归到单纯的Q价值贪心算法。
+在从上向下进行树搜索过程中的子结点选择（选择子结点实际上是选择子结点对应的move）算法，`TreeNode.select`，则是简单的选取`TreeNode.get_value`返回值最大的子结点，结合上述价值计算的分析，可以认为这是特殊的贪心算法：在模拟对局数少的时候，c\_puct值与各结点的先验概率对树搜索起很大的影响，而随着模拟对局的增加，树搜索算法回归到单纯基于结点Q价值的贪心算法。
 
-结点迭代更新是通过叶结点价值回溯传播实现的，代码可见使用了递归法，见：
+结点信息（Q价值、\_n\_visits）更新是通过叶结点价值回溯传播实现的，代码可见使用了递归法，见：
 
 ```Python
 def update(self, leaf_value):
@@ -111,11 +111,11 @@ def update_recursive(self, leaf_value):
     self.update(leaf_value)
 ```
 
-代码中的叶结点价值由rollout或策略价值网络获得（见下文解说），取值为1（当前棋手获胜）、-1或0（和棋）。由代码可见，沿着模拟对局（playout）路径的所有结点的\_n\_visits与\_Q在回溯中会被更新，而通过在每次递归中都反转叶结点价值的符号来实现当前棋手与对弈棋手Q价值（平均值）的增减，即对应Minimax算法中对弈双方的价值在搜索树的各层中交替地往正负两个方向的累积，有所不同的是，上述方法巧妙地使得从上向下搜索结点时，统一使用最大价值贪心算法就能等价地实现传统Minimax搜索中的最大值最小值逐层交替进行的操作。
+代码中的叶结点价值由rollout或策略价值网络获得（见下文解说），取值为1（当前棋手获胜）、-1或0（和棋）。由代码可见，沿着模拟对局（playout）路径的所有结点的\_n\_visits与\_Q在回溯中会被更新，而通过在每次递归中都反转叶结点价值的符号来实现当前棋手与对弈棋手Q价值（平均值）的增减，即对应Minimax算法中对弈双方的价值在搜索树的各层中交替地往正负两个方向的累积，有所不同的是，上述方法巧妙地使得从上向下搜索结点时，统一使用最大价值贪心算法就能等价地实现传统Minimax搜索中的最大值最小值逐层交替进行的操作。`（传统Minimax树中，规定以一方的胜局为正，败局为负，以相同的叶结点值去更新每一层，使得双方对应结点的价值向正负相反方向累积，则从上向下搜索时必须逐层交替地取最大值和取最小值；而这里描述的MCTS递归回溯更新算法，永远以正数更新当前胜者对应的结点，以负数更新对手的结点，并无假定以某一方的胜负为叶结点正负值的参考，故从上向下搜索时只需简单地取最大值即可）。`
 
 ## 纯MCTS下子算法
 
-`mcts_pure.py`实现了纯MCTS的下子算法，基本原理是模拟对局（playout）多次（默认10000次），取累计访问次数最多的子结点对应的move为着下一子的位置，解析如下：
+`mcts_pure.py`实现了纯MCTS的下子算法，基本原理是模拟对局（playout）多次（默认2000次），取累计访问次数最多的子结点对应的move为着下一子的位置，解析如下：
 
 * 下子决策`MCTS.get_move`
 
@@ -125,15 +125,15 @@ def update_recursive(self, leaf_value):
 
 * 模拟对局流程`MCTS._playout`
 
-  * __搜索阶段__：从根结点出发，依照`TreeNode.select`规则不断向下搜索子结点直到到达叶结点，与此同时，每选择一子结点，则以其对应的move去更新棋盘局面（`Board.do_move`）。
+  * **搜索阶段**：从根结点出发，依照`TreeNode.select`规则不断向下搜索子结点直到到达叶结点，与此同时，每选择一子结点，则以其对应的move去更新棋盘局面（`Board.do_move`）。
 
-  * 若棋盘局面到达终结状态，则以局面的胜负值，从当前结点（即__搜索阶段__结束时到达的叶结点）开始递归回溯更新对局路径上所有结点的信息（\_n\_visits与Q值），本次模拟对局完结。
+  * 若棋盘局面到达终结状态，则以局面的胜负值，从当前结点（即**搜索阶段**结束时到达的叶结点）开始递归回溯更新对局路径上所有结点的信息（\_n\_visits与Q值），本次模拟对局完结。
 
   * 若棋盘局面并未终结，则把当前局面下所有可能的下一子位置添加为当前结点（见上一点描述）的子结点，并令各子结点的先验概率服从均匀分布，即$\frac{1}{number\ of\ Board.availables)}$。
 
-    * __rollout阶段__：从当前结点开始，完全随机地下子（从可着子的位置选择move），每下一子则更新棋盘局面，直到棋局终结，这一过程称为rollout。
+    * **rollout阶段**：从当前结点开始，完全随机地下子（从可着子的位置选择move），每下一子则更新棋盘局面，直到棋局终结，这一过程称为rollout。
 
-    * 以rollout获得的胜负结果，从当前结点开始递归回溯更新结点信息直至根结点，注意，这里的当前结点同上文的解释，即是rollout开始前的结点，也就是__搜索阶段__结束时到达的结点。
+    * 以rollout获得的胜负结果，从当前结点开始递归回溯更新结点信息直至根结点，注意，这里的当前结点同上文的解释，即是rollout开始前的结点，也就是**搜索阶段**结束时到达的结点。
 
 总结纯MCTS下子策略：输入当前棋盘局面，通过多次模拟对局为其从根开始建立全新的一棵MCTS搜索树，然后把根结点下有最多访问次数的子结点对应的move作为下一子的位置返回。在模拟对局中，树搜索阶段使用特殊的贪心算法（如前文所述），添加子结点时则添加所有可能的下一move对应的子结点并赋予相同的先验概率，在rollout阶段则进行完全随机的下子，最后把对局胜负值递归回溯更新路径上各结点的信息。
 
@@ -147,7 +147,7 @@ def update_recursive(self, leaf_value):
 
 * 结点价值计算方式相同。
 
-* 模拟对局（playout）实现方式不同，在AlphaZero算法下，playout在经历了__搜索阶段__后，若当前局面并未终结，则从策略价值网络中根据当前棋盘局面获得下一步所有可能的move及其对应的先验概率，并以之扩充当前结点的子结点，与此同时，策略价值网络还根据局面计算一个叶结点价值（称为局面评分可能更恰当，其值介乎于-1与1之间，意义与纯MCTS的__rollout阶段__获得的终局胜负得分相当），并以此来递归回溯更新相关结点的信息。
+* 模拟对局（playout）实现方式不同，在AlphaZero算法下，playout在经历了**搜索阶段**后，若当前局面并未终结，则从策略价值网络中根据当前棋盘局面获得下一步所有可能的move及其对应的概率（对应子结点的先验概率），并以之扩充为当前结点的子结点，与此同时，策略价值网络还根据局面计算一个叶结点价值（称为局面评分可能更恰当，其值介乎于-1与1之间，意义与纯MCTS的**rollout阶段**获得的终局胜负得分相当），并以此来递归回溯更新相关结点的信息。
 
 * 通过多次模拟对局（playout），从根结点的子结点集中选取下一子move的思路与纯MCTS一致，但具体实现方法很不同：
 
@@ -301,7 +301,7 @@ def update_recursive(self, leaf_value):
 
 研读AlphaZero Gomoku的策略价值网络部分代码时，主要参考的是Tensorflow实现，下面记录一些当时产生过疑惑的概念：
 
-### logit究竟是什么意思？
+### logit究竟是什么意思
 
 在概率论里面logit的含义与odds相关，odds的定义是：$odds=\frac{probability\ of\ event}{probability\ of\ no\ event}$，而$logit=\log(odds)$。但在Tensorflow的语境中，logit并不能按此理解，现在直接摘录[StackOverflow上的回答](https://stackoverflow.com/questions/34240703/what-is-logits-softmax-and-softmax-cross-entropy-with-logits?noredirect=1&lq=1%5D)来解释：
 
@@ -325,7 +325,7 @@ ce = cross_entropy(sm)
 > If you want to do optimization to minimize the cross entropy AND you're softmaxing after your last layer, you should use `tf.nn.softmax_cross_entropy_with_logits` instead of doing it yourself, because it covers numerically unstable corner cases in the mathematically right way. Otherwise, you'll end up hacking it by adding little epsilons here and there.
 > If you have single-class labels, where an object can only belong to one class, you might now consider using `tf.nn.sparse_softmax_cross_entropy_with_logits` so that you don't have to convert your labels to a dense one-hot array. This function was added after release 0.6.0.
 
-### 卷积层若干参数的意义，特别是kernel_size参数与实际进行卷积时候的kernel维度问题？
+### 卷积层若干参数的意义，特别是kernel_size参数与实际进行卷积时候的kernel维度问题
 
 Assuming original shape of the input is [batch, 4, height, width], why we need the following transposition?
 
