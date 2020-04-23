@@ -2,7 +2,7 @@
 
 Notes, code, useful assets and various stuff about machine learning.
 
-Tools:
+Tools and tips:
 
 * [Typora](https://typora.io/) for markdown editing.
 
@@ -11,6 +11,8 @@ Tools:
 * [Working with Docker Desktop (Windows 10) and WSL](https://nickjanetakis.com/blog/setting-up-docker-for-windows-and-wsl-to-work-flawlessly#ensure-volume-mounts-work).
 
 * [Tips for running Docker, Deepo and Jupyter](https://zhuanlan.zhihu.com/p/64493662).
+
+* RL algorithms baselines: [OpenAI baselines](https://github.com/openai/baselines) (with a Tensorflow 2.0 branch) and [Stable Baselines](https://stable-baselines.readthedocs.io/).
 
 Learning material:
 
