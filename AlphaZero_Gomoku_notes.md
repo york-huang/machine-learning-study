@@ -352,4 +352,4 @@ self.conv1 = tf.layers.conv2d(inputs=self.input_state,
 
 * so the above conv1 pipeline is like [number of batches, height, width, input channels] ==> [number of batches, height, width, output channels], i.e., [batch, height, width, 4] ==> [batch, height, width, 32].
 
-* the math behind each output "pixel" is computed as $ReLU( dot( flattened\ kernel\ weights[3*3*4], flattened\ input\ data\ window[3*3*4] ) + bias)$, the total number of parameters of the above conv1 example is: $(3 * 3 * 4 + 1) * 32 = 1184$.
+* the math behind each output "pixel" is computed as $ReLU( dot( flattened\ kernel\ weights[3*3*4], flattened\ input\ data\ window[3*3*4] ) + bias)$, the total number of parameters of the above conv1 example is: $(3*3*4+1)*32 = 1184$.

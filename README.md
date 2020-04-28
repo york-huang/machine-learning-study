@@ -1,6 +1,6 @@
 # Machine Learning Study
 
-Notes, code, useful assets and various stuff about machine learning.
+Notes, code and useful assets about machine learning.
 
 Tools and tips:
 
@@ -12,12 +12,16 @@ Tools and tips:
 
 * [Tips for running Docker, Deepo and Jupyter](https://zhuanlan.zhihu.com/p/64493662).
 
-* RL algorithms baselines: [OpenAI baselines](https://github.com/openai/baselines) (with a Tensorflow 2.0 branch) and [Stable Baselines](https://stable-baselines.readthedocs.io/).
+* RL algorithms baselines: [OpenAI Baselines](https://github.com/openai/baselines) (with a Tensorflow 2.0 branch) and [Stable Baselines](https://stable-baselines.readthedocs.io/) (used in Kaggle courses, well documented and maintained).
 
 Learning material:
 
 * David Silver/UCL reinforcement learning lectures ([slides](https://www.davidsilver.uk/teaching/), [video](https://www.bilibili.com/video/BV1kb411i7KG?from=search&seid=10277587044180293066)), excellent resource for learning RL.
 
-* Liu Jianping's machine learning [blog](https://www.cnblogs.com/pinard/), detailed notes for various topics on machine learning.
+* [Deep Reinforcement Learning Through Policy Optimization (video)](https://channel9.msdn.com/events/Neural-Information-Processing-Systems-Conference/Neural-Information-Processing-Systems-Conference-NIPS-2016/Deep-Reinforcement-Learning-Through-Policy-Optimization?term=policy%20gradient&lang-en=true), introduction to various advanced policy gradient and actor/critic methods.
 
 * [AlphaZero Gomoku](https://github.com/junxiaosong/AlphaZero_Gomoku), very good resource for understanding the principle of AlphaZero.
+
+* [Cross-entropy error instead of MSE for classification problem](https://jamesmccaffrey.wordpress.com/2013/11/05/why-you-should-use-cross-entropy-error-instead-of-classification-error-or-mean-squared-error-for-neural-network-classifier-training/), well explained.
+
+* Liu Jianping's machine learning [blog](https://www.cnblogs.com/pinard/), detailed notes for various topics on machine learning.
