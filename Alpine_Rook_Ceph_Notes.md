@@ -1,20 +1,20 @@
 # Single-node Rook/Ceph on a 2-nodes k3s Kubernetes cluster
 
-On a Windows 10 laptop (Surface Book 1st gen), I used two Hyper-V VMs to form a k3s Kubernetes cluster (1 master node + 1 agent node), then deployed the Rook/Ceph on it, with a single-node setup, i.e., one mon, one mgr and one osd (on a raw block device) on one single node (VM).
+All works are done on a Windows 10 laptop (Surface Book 1st gen): two Hyper-V VMs are used to run a k3s Kubernetes cluster (1 master node + 1 agent node), then the Rook/Ceph is deployed on top of it, with a single-node setup, i.e., one mon, one mgr and one osd (on a raw block device) on one single node (VM).
 
-Such deployment is served for the proof-of-concept and testing purpose. 
+Such deployment is served for the purpose of proof-of-concept and testing.
 
 ### Prepare the k3s Kubernetes cluster
 
-Perform the following steps on both Hyper-V VMs.
+Perform the following steps on two Hyper-V VMs.
 
 * Grab the Alpine Linux v3.12 virt image ISO file, install as instructed [here](https://wiki.alpinelinux.org/wiki/Alpine_Install:_from_a_disc_to_a_virtualbox_machine_single_only), some notes should be taken:
 
-  * For the agent node, attach a secondary virtual disk (such as /dev/sdb, leave it raw, no filesystem, no Alpine installation on it) which is used as the ceph-volume later. **NOTE**: I tried a 5GB disk for it but failed in `ceph-volume lvm` step, then I used a 10GB one and succeeded in bringing up the OSD on it finally.
+  * For the agent node, attach a secondary virtual disk (such as /dev/sdb, leave it raw, no filesystem, no Alpine installation on it) which is used as the ceph-volume later. **NOTE**: I tried a 5GB disk for it but failed in `ceph-volume lvm` step, then I used a 10GB one instead and succeeded in bringing up the OSD on it finally.
 
-  * In Hyper-V firmware settings, disable secure boot otherwise it might case issues.
+  * In Hyper-V firmware settings, disable secure boot to prevent potential issues during system boot.
   
-  * In Hyper-V network settings, connect the NIC to default switch instead of the WSL one since WSL haven't DHCP enabled which might cause trouble. By doing this, you can't access Alpine from WSL, instead, use PowerShell to do SSH, see below.
+  * In Hyper-V network settings, connect the NIC to the default switch instead of the WSL one since the latter would cause DHCP issues during Alpine installation. By doing this, you can't access Alpine from WSL (WSL and Alpine not in a same network), instead, use PowerShell to do SSH, see below. (More Hyper-V network issues explained in below sections.)
 
   * In Hyper-V memory settings, either disable dynamic memory or specify a reasonable upper limit, otherwise it would consume excessive amount of memory of the host machine.
 
@@ -36,7 +36,7 @@ Perform the following steps on both Hyper-V VMs.
 
   * Reboot, then check the `cgroups` status by `mount|grep cgroup`, kernel parameters by `cat /proc/cmdline`, also the `docker` status by `docker info`.
 
-* ~~Install `k3d`, kubectl and create a small cluster as instructed on other notes.~~ This plan is abandoned since raw block persistent volume (`k3d` cluster runs containers as nodes that Rook Ceph needs raw block PV for Ceph OSD) is troublesome on current setup.
+* ~~Install `k3d`, `kubectl` and create a small cluster as instructed on other notes.~~ This plan is abandoned since raw block persistent volume (`k3d` cluster runs containers as nodes that Rook Ceph needs raw block PV for Ceph OSD) is troublesome on current setup.
 
 * Install `lvm2` and `rc-update add lvm default`, it's required by Rook/Ceph deployment as stated [here](https://rook.io/docs/rook/v1.3/ceph-prerequisites.html).
 
@@ -111,3 +111,11 @@ kubectl create -f cluster-custom.yaml
 ```
 
 Use `kubectl get pod -n rook-ceph` to confirm the status of the deployment. Furthermore, one can deploy `ceph-toolbox` to do more with the ceph things, as instructed [here](https://rook.io/docs/rook/v1.3/ceph-toolbox.html).
+
+### Hyper-V network issues
+
+* Hyper-V virtual ethernet adapters (both `default switch` and `WSL switch`) network (IP range) change on every reboot of the host Windows, causing the IP assigned to VMs invalid after host reboot. It's a problem since the changing network prevents lots of services from functioning correctly, including the Kubernetes and Ceph cluster we setup in previous sections, see this thread: https://github.com/microsoft/WSL/issues/4210#issuecomment-629135832.
+
+* Simply put, all that we need is Hyper-V VMs have working static IPs which are able to survive in host (Windows 10, in my case) reboot. A possible workaround (**NOT** yet verified) is Hyper-V NAT, which is documented [here](https://www.cnblogs.com/wswind/p/11007613.html).
+
+* Configure static IPs on Alpine, see [here](https://wiki.alpinelinux.org/wiki/Configure_Networking#IPv4_Static_Address_Configuration). 

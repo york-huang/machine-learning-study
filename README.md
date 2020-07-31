@@ -28,6 +28,10 @@ Learning material:
 
 * [Cross-entropy error instead of MSE for classification problem](https://jamesmccaffrey.wordpress.com/2013/11/05/why-you-should-use-cross-entropy-error-instead-of-classification-error-or-mean-squared-error-for-neural-network-classifier-training/), well explained.
 
+* [Step-by-step walk through for LSTM](http://colah.github.io/posts/2015-08-Understanding-LSTMs/), very well explained on the concepts (the [blog](http://colah.github.io/) contains some other good tutorials and writings on machine learning).
+
+* [Maths behind GAN and its problems](https://lilianweng.github.io/lil-log/2017/08/20/from-GAN-to-WGAN.html), very comprehensive.
+
 * [Lilian Weng's blog](https://lilianweng.github.io/lil-log/) on RL and various machine learning topics, articles and tutorials are of very high quality.
 
 * Liu Jianping's machine learning [blog](https://www.cnblogs.com/pinard/), detailed notes for various topics on machine learning.
