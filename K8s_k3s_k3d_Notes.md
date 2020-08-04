@@ -52,6 +52,104 @@ a component that acts as a basic internal load balancer and ambassador for pods.
 
 * Volumes. Abstraction layer that allows data to be shared by all containers within a pod and remain available until the pod is terminated. Container failures within the pod will not affect access to the shared files. Once the pod is terminated, the shared volume is destroyed. In contrast, **persistent volumes** is not tied to the pod life cycle, once a pod is done with a persistent volume, the volume’s reclamation policy determines whether the volume is kept around until manually deleted or removed along with the data immediately. Persistent data can be used to guard against node-based failures and to allocate greater amounts of storage than is available locally.
 
+### Example: deploy Nginx to Kubernetes cluster
+
+Notes taken from [this](https://devopscube.com/kubernetes-deployment-tutorial/) comprehensive Kubernetes Nginx deployment tutorial. 
+
+* Overview: Namespace -> Deployment -> Pod <- Service. In Kubernetes, pods are the basic units that get deployed in the cluster. Kubernetes deployment is an abstraction layer for the pods. The main purpose of the deployment object is to maintain the resources declared in the deployment configuration (typically the YAML files) in its desired state.
+
+* Deployment key concepts:
+
+  * A Deployment can schedule multiple pods. A pod as a unit cannot scale by itself.
+
+  * A Deployment represents a single purpose with a group of PODs.
+
+  * A single POD can have multiple containers and these containers inside a single POD shares the same IP (so-called podIP) and can talk to each other using localhost address.
+
+  * To access a Deployment with one or many PODs, you need a Kubernetes **Service endpoint mapped to the deployment** using labels and selectors.
+
+* Namespace and Deployment sample YAML files.
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: deployment-demo
+  labels:
+    apps: web-based
+  annotations:
+    type: demo
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: mem-cpu-quota
+  namespace: deployment-demo
+spec:
+  hard:
+    requests.cpu: "4"
+    requests.memory: 8Gi
+    limits.cpu: "8"
+    limits.memory: 16Gi
+```
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+  namespace: deployment-demo
+  annotations:
+    monitoring: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+          requests: 
+            memory: "1Gi"
+            cpu: "500m"
+```
+
+* Service sample YAML file.
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nginx
+  name: nginx
+  namespace: deployment-demo
+spec:
+  ports:
+  - nodePort: 30500
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: nginx
+  type: NodePort
+```
+
+With `app: nginx` in `labels` section as a selector, the service will be able to match the pods in previous Nginx deployment as the deployment and the pods have the same label. So automatically all the requests coming to the Nginx service will be sent to the Nginx deployment. Now, we are able to access the Nginx service on any one of the Kubernetes node IP on port 30500.
+
 ## k3d deployment notes
 
 [k3s](https://k3s.io/) is kind of lightweight Kubernetes which can setup a complete functional Kubernetes cluster with a few lines of command, while [k3d](https://k3d.io/) is a docker/container version of k3s, which is able to run a multi-nodes Kubernetes cluster on a single machine (also can run the cluster on multiple machines, like a typical Kubernetes cluster setup). I've tried k3d (v3.0.0) on WSL2 for some time, notes are made as below.
